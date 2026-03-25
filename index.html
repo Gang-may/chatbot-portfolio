@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MZG8GG9F');</script>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>황경민 | Portfolio App</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Toukoum style uses very clean, bold typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MZG8GG9F" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    
+    <!-- Animated Watercolor Background (Toukoum Style) -->
+    <div class="watercolor-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+        <!-- Grain overlay characteristic of modern webgl sites -->
+        <div class="noise-overlay"></div>
+    </div>
+    
+    <div class="app-container">
+        
+        <!-- Header Actions -->
+        <div class="top-nav">
+            <div class="logo">K.M.</div>
+            <button id="theme-toggle" class="icon-btn" aria-label="Toggle Theme">
+                <i class="fas fa-moon dark-icon"></i>
+                <i class="fas fa-sun light-icon"></i>
+            </button>
+        </div>
+
+        <!-- Main Content Area where greeting or chat appears -->
+        <main class="main-display">
+            <!-- Greeting Title (Toukoum Style) -->
+            <div id="greeting-layer" class="greeting-layer">
+                <h1 class="huge-title">Hey, I'm <br>Kyung-min <span class="wave">👋</span></h1>
+                <h2 class="subtitle-badge">AI Data Analyst</h2>
+            </div>
+            
+            <!-- Messages Area (Overlay) -->
+            <div id="chat-container" class="chat-container">
+                <!-- Chat bubbles inject here -->
+            </div>
+        </main>
+
+        <!-- Input Area (Bottom Dock) -->
+        <footer class="input-dock">
+            <div id="suggestions-wrapper" class="suggestions-wrapper">
+                <div id="suggestions-container" class="suggestions">
+                    <!-- Chips inject here -->
+                </div>
+            </div>
+            <div class="input-bar">
+                <input type="text" id="chat-input" placeholder="Ask me about my projects or skills..." autocomplete="off">
+                <button id="send-btn" class="send-btn" aria-label="Send Message"><i class="fas fa-arrow-up"></i></button>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Toast -->
+    <div id="toast" class="toast"><i class="fas fa-check-circle"></i> 이메일이 복사되었습니다!</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
