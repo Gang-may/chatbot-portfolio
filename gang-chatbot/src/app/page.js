@@ -195,7 +195,7 @@ export default function Home() {
     // ── 관리자 모드 판별 ──────────────────────────────────────
     // ?admin=hkm712 로 접속하면 카운트 제한 없이 무제한 사용 가능
     // 카운트·대화 내역을 저장하지 않아 방문자 데이터에 영향을 주지 않음
-    if (admin === ADMIN_SECRET) {
+    if (ADMIN_SECRET && admin === ADMIN_SECRET) {
       setIsAdminMode(true);
       setIsStickerShown(true); // 스티커 표시 생략
       trackVisit(`${c}_admin`);
