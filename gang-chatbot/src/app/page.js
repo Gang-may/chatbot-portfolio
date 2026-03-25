@@ -11,12 +11,18 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { checkFAQ } from "@/lib/faqCache";
 import { trackVisit, trackMessage, trackLimitReached } from "@/lib/dataLayer";
+import dynamic from "next/dynamic";
+// SkillChart: SSR 비활성화 (Chart.js는 window 객체에 의존)
+const SkillChart = dynamic(() => import("@/components/SkillChart"), { ssr: false });
 
 // ─────────────────────────────────────────────
 // 상수
 // ─────────────────────────────────────────────
 const MAX_CHAT_COUNT = 10;
-const ADMIN_SECRET = "hkm712"; // ?admin=hkm712 로 관리자 모드 진입
+// ── 관리자 시크릿: 환경변수로 분리하여 하드코딩 노출 방지 ──────────────
+// .env.local: NEXT_PUBLIC_ADMIN_SECRET=hkm712
+// Vercel 대시보드: Settings > Environment Variables 에 동일하게 추가
+const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || "";
 const STICKER_DURATION = 10;
 const TYPEWRITER_SPEED = 15; // ms/글자
 const PORTFOLIO_URL = "https://gang-may.github.io/my-portfolio/";
@@ -453,17 +459,32 @@ export default function Home() {
       if (faqResult.matched) {
         // [A] FAQ 캐시 히트: API 호출 없이 즉시 답변
         setTimeout(() => {
-          addToChatHistory({
-            role: "assistant",
-            text: faqResult.answer,
-            typewrite: true,
-          });
+          if (faqResult.type === "chart" && faqResult.chartData) {
+            // ── 차트 응답: 말풍선에 Chart 컴포넌트를 직접 렌더링 ──
+            const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            setChatHistory((prev) => [
+              ...prev,
+              {
+                id,
+                role: "assistant",
+                text: faqResult.answer,   // 폴백 텍스트 (SR 등)
+                chartData: faqResult.chartData, // 차트 데이터
+                done: true,
+              },
+            ]);
+          } else {
+            // ── 텍스트 응답: 기존 타이프라이터 로직 ──
+            addToChatHistory({
+              role: "assistant",
+              text: faqResult.answer,
+              typewrite: true,
+            });
+          }
           setIsLocked(false);
 
           if (isLast) {
-            // 타이프라이터 완료 후 한도 안내 추가
             const delay = Math.min(
-              faqResult.answer.length * TYPEWRITER_SPEED + 800,
+              (faqResult.answer?.length ?? 0) * TYPEWRITER_SPEED + 800,
               6000,
             );
             setTimeout(() => {
@@ -571,6 +592,18 @@ export default function Home() {
             {isAdminMode && <span className="admin-badge">🔧 ADMIN</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* ── 상세 포트폴리오 링크: 회사명 파라미터 유지 (크로스 도메인 여정) ── */}
+            <a
+              href={`https://gang-may.github.io/my-portfolio/?c=${company}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="portfolio-link-btn"
+              title="메인 포트폴리오로 이동"
+            >
+              <i className="fas fa-external-link-alt" style={{ marginRight: "5px" }}></i>
+              상세 포트폴리오
+            </a>
+
             {/* 관리자 전용: 방문자 데이터 초기화 버튼 */}
             {isAdminMode && (
               <>
@@ -579,10 +612,8 @@ export default function Home() {
                   className="icon-btn"
                   title={`현재 세션(${company}) 초기화 - 대화 다시 테스트`}
                   onClick={() => {
-                    // localStorage에서 현재 회사 데이터만 삭제
                     localStorage.removeItem(`chat_count_${company}`);
                     localStorage.removeItem(historyKey(company));
-                    // 메모리 상태 리셋 (페이지 새로고침 없이)
                     setChatCount(0);
                     setIsLimitReached(false);
                     setChatHistory([WELCOME_MSG]);
@@ -657,10 +688,17 @@ export default function Home() {
                   className={`message-row ${m.role === "user" ? "user" : "bot"}`}
                 >
                   <div className="bubble markdown-body">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {text}
-                    </ReactMarkdown>
-                    {isTyping && <span className="typewriter-cursor">▋</span>}
+                    {/* type:"chart" → SkillChart 렌더링, 그 외 → 텍스트 */}
+                    {m.chartData && !isTyping ? (
+                      <SkillChart chartData={m.chartData} />
+                    ) : (
+                      <>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {text}
+                        </ReactMarkdown>
+                        {isTyping && <span className="typewriter-cursor">▋</span>}
+                      </>
+                    )}
                   </div>
                 </div>
               );

@@ -317,3 +317,28 @@ div.wave { display: inline-block; animation: wave-animation 2.5s infinite; trans
     box-shadow: 0 2px 8px rgba(239,68,68,0.4);
 }
 
+/* ── 상세 포트폴리오 링크 버튼 (상단 네비) ─────────── */
+.portfolio-link-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+.portfolio-link-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    transform: translateY(-1px);
+}
+[data-theme="light"] .portfolio-link-btn {
+    color: #2563eb;
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+

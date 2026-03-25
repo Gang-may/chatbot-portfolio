@@ -3,14 +3,21 @@
  * ------------------------------------------------------------------
  * FAQ 인터셉터 캐시 모듈
  * 사용자 입력에 특정 키워드가 포함되어 있으면 Gemini API를 호출하지 않고
- * 미리 준비한 답변을 즉시 반환하여 API 크레딧 소모를 0으로 줄입니다.
+ * 미리 준비한 답변을 즉시 반환하여 API 크레딧 소모를 줄입니다.
+ *
+ * [고도화 v2] 정규식 + 최장 키워드 우선 매칭
+ * - 단순 includes() 대신 정규표현식 \b(단어 경계)로 정밀 매칭
+ * - 동일 질문에 여러 키워드가 매칭될 때, 가장 긴(구체적인) 키워드를
+ *   가진 엔트리에 우선순위 부여 → '장점' vs '장단점' 충돌 해소
  * ------------------------------------------------------------------
  */
 
 /**
- * FAQ 매핑 테이블
- * key: 검색할 키워드 배열 (공백 제거 + 소문자화 후 includes 검사)
- * value: 즉시 반환할 답변 문자열 (마크다운 지원)
+ * FAQ_MAP
+ * type 필드:
+ *   "text"  - 기본 마크다운 텍스트 응답
+ *   "chart" - page.js에서 Chart 컴포넌트로 렌더링
+ *             chartData 필드에 Chart.js용 데이터 정의
  */
 const FAQ_MAP = [
   {
@@ -23,6 +30,7 @@ const FAQ_MAP = [
       "페이",
       "월급",
     ],
+    type: "text",
     answer: `💰 **희망 연봉에 대해서**\n\n저는 연봉보다 **성장 가능성과 팀 문화**를 우선시합니다!\n\n구체적인 수치는 직무 범위와 복지 조건을 파악한 뒤 협의하고 싶습니다. 합리적인 수준에서 유연하게 조율할 수 있습니다 😊\n\n자세한 이야기는 면접 자리에서 나눠보면 좋겠습니다!`,
   },
   {
@@ -35,6 +43,7 @@ const FAQ_MAP = [
       "근무시간",
       "근무 시간",
     ],
+    type: "text",
     answer: `⚖️ **워라밸에 대해서**\n\n저는 **효율적인 업무 진행**을 통해 정해진 시간 내에 성과를 내는 것을 지향합니다.\n\n물론 중요한 마감이나 프로젝트 일정에 따라 유연하게 대응할 수 있습니다. 다만 야근이 일상이 되는 구조보다는, 합리적인 업무 분배가 팀 전체의 지속 가능성을 높인다고 생각합니다 💪`,
   },
   {
@@ -48,7 +57,15 @@ const FAQ_MAP = [
       "email",
       "contact",
     ],
+    type: "text",
     answer: `📞 **연락처 정보**\n\n- 📱 전화: **010-5540-8025**\n- 📧 이메일: **kyoungmin712@naver.com**\n- 🌐 포트폴리오: [gang-may.github.io/my-portfolio](https://gang-may.github.io/my-portfolio/)\n\n편하신 방법으로 연락 주시면 신속하게 응대하겠습니다!`,
+  },
+  {
+    // ── 우선순위 충돌 해소 예시: '장단점'이 '장점'+'단점' 양쪽보다 먼저 매칭됨
+    // 정렬은 keywords 배열 최장 키워드 길이 기준 내림차순 (matchFAQ 내부에서 처리)
+    keywords: ["장단점"],
+    type: "text",
+    answer: `✨ **저의 핵심 강점 3가지**\n\n1. **📊 데이터 기반 문제해결력**\n   비즈니스의 불확실성을 데이터로 해소하는 과정을 즐깁니다. 단순 분석에 그치지 않고 비즈니스 인사이트까지 연결합니다.\n\n2. **🎯 주도적 실행력 (ESTJ)**\n   계획을 수립하고 끝까지 완수하는 성향입니다. 5개 이상의 프로젝트를 리드하며 입증했습니다.\n\n3. **🔗 도메인 융합 역량**\n   데이터 분석 + 마케팅 + 군수·방위 등 다양한 도메인 경험으로 폭넓은 문제에 대응합니다.\n\n---\n\n🤔 **저의 단점과 개선 노력**\n\n저는 **완벽주의 성향**이 있어 때로는 속도보다 정확성에 집착하는 경향이 있습니다.\n\n이를 보완하기 위해 **'80% 완성 후 피드백'** 원칙을 실천하며, 완벽한 결과보다 빠른 검증과 반복 개선이 더 효과적임을 배워가고 있습니다 📈`,
   },
   {
     keywords: [
@@ -60,34 +77,37 @@ const FAQ_MAP = [
       "어필",
       "셀링포인트",
     ],
+    type: "text",
     answer: `✨ **저의 핵심 강점 3가지**\n\n1. **📊 데이터 기반 문제해결력**\n   비즈니스의 불확실성을 데이터로 해소하는 과정을 즐깁니다. 단순 분석에 그치지 않고 비즈니스 인사이트까지 연결합니다.\n\n2. **🎯 주도적 실행력 (ESTJ)**\n   계획을 수립하고 끝까지 완수하는 성향입니다. 5개 이상의 프로젝트를 리드하며 입증했습니다.\n\n3. **🔗 도메인 융합 역량**\n   데이터 분석 + 마케팅 + 군수·방위 등 다양한 도메인 경험으로 폭넓은 문제에 대응합니다.`,
   },
   {
     keywords: ["단점", "약점", "부족한점", "부족한 점", "개선점", "아쉬운점"],
+    type: "text",
     answer: `🤔 **저의 단점과 개선 노력**\n\n저는 **완벽주의 성향**이 있어 때로는 속도보다 정확성에 집착하는 경향이 있습니다.\n\n이를 보완하기 위해 **'80% 완성 후 피드백'** 원칙을 실천하며, 완벽한 결과보다 빠른 검증과 반복 개선이 더 효과적임을 배워가고 있습니다 📈`,
   },
   {
-    keywords: ["장단점"],
-    answer: `✨ **저의 핵심 강점 3가지**\n\n1. **📊 데이터 기반 문제해결력**\n   비즈니스의 불확실성을 데이터로 해소하는 과정을 즐깁니다. 단순 분석에 그치지 않고 비즈니스 인사이트까지 연결합니다.\n\n2. **🎯 주도적 실행력 (ESTJ)**\n   계획을 수립하고 끝까지 완수하는 성향입니다. 5개 이상의 프로젝트를 리드하며 입증했습니다.\n\n3. **🔗 도메인 융합 역량**\n   데이터 분석 + 마케팅 + 군수·방위 등 다양한 도메인 경험으로 폭넓은 문제에 대응합니다.\n\n
-    🤔 **저의 단점과 개선 노력**\n\n저는 **완벽주의 성향**이 있어 때로는 속도보다 정확성에 집착하는 경향이 있습니다.\n\n이를 보완하기 위해 **'80% 완성 후 피드백'** 원칙을 실천하며, 완벽한 결과보다 빠른 검증과 반복 개선이 더 효과적임을 배워가고 있습니다 📈`,
-  },
-  {
     keywords: ["포트폴리오", "깃허브", "github", "작업물", "프로필"],
+    type: "text",
     answer: `🌐 **포트폴리오 사이트**\n\n👇 아래 링크에서 저의 모든 프로젝트와 역량을 확인하실 수 있습니다!\n\n🔗 [gang-may.github.io/my-portfolio](https://gang-may.github.io/my-portfolio/)`,
   },
   {
     keywords: ["학력", "학교", "졸업", "대학", "전공", "학점", "gpa"],
+    type: "text",
     answer: `🎓 **학력 사항**\n\n- **강서대학교** G2빅데이터경영학과 졸업 (2020.03 ~ 2026.02)\n  - 학점: **3.99 / 4.5** 🏆\n  - 마케팅 & 회계, 빅데이터 트랙 이수\n\n- **한국표준협회** 스마트 국방 데이터 분석과정 수료 (2024.07 ~ 2025.01)\n  - Python, SQL, 머신러닝, 딥러닝 등 실무 중심 교육`,
   },
   {
     keywords: ["자격증", "certification"],
+    type: "text",
     answer: `📜 **보유 자격증**\n\n| 자격증 | 발급기관 | 취득연도 |\n|---|---|---|\n| 데이터분석준전문가 (ADsP) | 한국데이터산업진흥원 | 2025 |\n| Google Analytics Certification | Google | 2026 |\n| 유통관리사 3급 | 대한상공회의소 | 2023 |\n| 자동차운전면허 1종보통 | 경찰청 | 2020 |`,
   },
   {
+    // ── 이 항목은 type: "chart" → page.js 에서 Radar Chart로 렌더링
     keywords: [
       "스킬",
       "기술스택",
       "기술 스택",
+      "역량",
+      "기술역량",
       "언어",
       "툴",
       "tool",
@@ -95,14 +115,34 @@ const FAQ_MAP = [
       "sql",
       "tableau",
     ],
+    type: "chart",
+    // chartData: Chart.js DatasetElement 형식 (Radar Chart)
+    chartData: {
+      chartType: "radar", // "radar" | "bar"
+      title: "🛠️ 기술 역량 차트",
+      labels: ["Python/R", "SQL", "머신러닝/딥러닝", "데이터 시각화", "마케팅 분석"],
+      datasets: [
+        {
+          label: "황경민의 역량 지수",
+          data: [90, 85, 80, 88, 75],
+          backgroundColor: "rgba(13, 148, 136, 0.2)",
+          borderColor: "rgba(13, 148, 136, 1)",
+          pointBackgroundColor: "rgba(13, 148, 136, 1)",
+          borderWidth: 2,
+        },
+      ],
+    },
+    // chart 타입도 폴백 텍스트 제공 (차트 렌더링 실패 시 사용)
     answer: `🛠️ **기술 스택**\n\n**언어 & 분석**\n\`Python\` \`R\` \`SQL (Oracle, MySQL)\`\n\n**라이브러리**\n\`Pandas\` \`Numpy\` \`BeautifulSoup\` \`Scikit-learn\`\n\n**AI / ML**\n\`머신러닝 (분류·회귀·클러스터링)\` \`딥러닝 (YOLOv11s)\` \`LDA 토픽 모델링\` \`SARIMAX 시계열\`\n\n**시각화**\n\`Tableau\` \`Matplotlib\` \`대화형 대시보드\``,
   },
   {
     keywords: ["수상", "최우수상"],
+    type: "text",
     answer: `🏆 **수상 이력**\n\n- **스마트 국방 데이터 분석과정 최우수상**\n  - 주관: 한화에어로스페이스 × 한국표준협회\n  - 수상일: 2025년 1월\n  - TERRA 프로젝트(AI & GIS 전술 지원 시스템)로 수상했습니다!`,
   },
   {
     keywords: ["지원동기", "지원 동기"],
+    type: "text",
     answer: `💡 **지원 동기에 대해서**\n\n저는 **"데이터가 비즈니스의 불확실성을 해소하는 가장 확실한 근거"** 라고 믿습니다.\n\n단순한 분석 결과 도출이 아닌, 실제 의사결정에 영향을 미치는 분석가가 되고 싶습니다.\n귀사의 데이터 환경에서 제 역량을 발휘하고 싶어 지원했습니다 🎯`,
   },
   {
@@ -115,31 +155,80 @@ const FAQ_MAP = [
       "하고싶은것",
       "하고 싶은 것",
     ],
+    type: "text",
     answer: `🚀 **입사 후 목표**\n\n**단기 (1년)**: 팀의 데이터 파이프라인과 분석 환경을 빠르게 파악하고, 즉시 기여할 수 있는 분석 과제를 선제적으로 발굴합니다.\n\n**중기 (3년)**: 비즈니스 도메인 전문성과 데이터 역량을 결합해, 경영진이 믿고 의지하는 **데이터 기반 의사결정 파트너**로 성장합니다.\n\n**장기**: AI 기반 분석 자동화 시스템을 구축해 팀 전체의 생산성을 높이는 데 기여하고 싶습니다 💪`,
   },
 ];
 
 /**
+ * buildKeywordPattern(keyword)
+ * ------------------------------------------------------------------
+ * 한국어는 영어처럼 단어 경계(\b)가 명확하지 않으므로,
+ * 아래 두 가지 전략을 조합합니다.
+ *
+ * 1. 영문 키워드 → \b 단어 경계 적용:  \bpython\b
+ * 2. 한글 키워드 → 앞뒤에 비단어문자(공백·구두점 등) 또는 문자열 시작/끝을
+ *    뜻하는 (?<![가-힣]) / (?![가-힣]) 로 경계 처리:
+ *    → 예) "장점" 은  "강점" 에서 매칭되지 않도록 보호
+ *
+ * 단, whitespace를 제거한 정규화된 문자열에 적용하기 때문에
+ * 퍼포먼스와 단순성을 위해 '완전 포함(exact-include)' + 최장 매칭 조합을 사용합니다.
+ * ------------------------------------------------------------------
+ */
+function buildKeywordPattern(keyword) {
+  const isEnglish = /^[a-zA-Z\s]+$/.test(keyword);
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (isEnglish) {
+    // 영문: 단어 경계 \b 활용
+    return new RegExp(`\\b${escaped}\\b`, "i");
+  }
+  // 한글/혼합: 앞뒤로 비한글 문자 혹은 BOL/EOL 강제
+  return new RegExp(`(?<![가-힣a-zA-Z])${escaped}(?![가-힣a-zA-Z])`);
+}
+
+/**
  * checkFAQ(rawText)
  * ------------------------------------------------------------------
+ * 알고리즘 (최장 키워드 우선 매칭):
+ * 1. rawText를 공백 제거 + 소문자 변환으로 정규화
+ * 2. FAQ_MAP 전체를 순회하여 각 엔트리의 키워드가 매칭되는지 정규식으로 확인
+ * 3. 매칭된 엔트리 중 "가장 긴 키워드"를 가진 엔트리를 최종 선택
+ *    → '장단점'(3글자) > '장점'(2글자) 우선순위가 자동으로 결정됨
+ *
  * @param {string} rawText - 사용자가 입력한 원본 텍스트
- * @returns {{ matched: boolean, answer: string | null }}
- *   matched: true이면 FAQ 캐시 히트 (API 호출 불필요)
- *   answer:  매칭된 답변 문자열 (matched가 false이면 null)
+ * @returns {{ matched: boolean, answer: string | null, type: string, chartData?: object }}
  * ------------------------------------------------------------------
  */
 export function checkFAQ(rawText) {
-  // 공백 제거 + 소문자 변환으로 정규화
+  // 1. 정규화: 공백 제거 + 소문자
   const normalized = rawText.replace(/\s+/g, "").toLowerCase();
+
+  let bestMatch = null;       // 현재 최고 매칭 엔트리
+  let bestKeywordLen = -1;    // 현재 최고 매칭 키워드 길이
 
   for (const faq of FAQ_MAP) {
     for (const keyword of faq.keywords) {
-      // 키워드도 동일하게 정규화하여 비교
-      if (normalized.includes(keyword.replace(/\s+/g, "").toLowerCase())) {
-        return { matched: true, answer: faq.answer };
+      // 키워드도 동일하게 정규화
+      const normalizedKeyword = keyword.replace(/\s+/g, "").toLowerCase();
+      const pattern = buildKeywordPattern(normalizedKeyword);
+
+      if (pattern.test(normalized)) {
+        // 더 긴 키워드가 매칭된 경우에만 교체 (최장 매칭 우선)
+        if (normalizedKeyword.length > bestKeywordLen) {
+          bestKeywordLen = normalizedKeyword.length;
+          bestMatch = faq;
+        }
+        break; // 이 엔트리 내에서 하나라도 매칭되면 다음 키워드 검사 불필요
       }
     }
   }
 
-  return { matched: false, answer: null };
+  if (!bestMatch) return { matched: false, answer: null, type: "text" };
+
+  return {
+    matched: true,
+    answer: bestMatch.answer,
+    type: bestMatch.type || "text",
+    chartData: bestMatch.chartData || null,
+  };
 }
