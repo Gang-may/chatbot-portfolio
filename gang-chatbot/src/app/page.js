@@ -83,7 +83,21 @@ export default function Home() {
   const [isLocked, setIsLocked] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  // ── 3. useChat (API 통신) ──────────────────────────────────────
+  // ── 3. 헬퍼 함수 (전송/기록) ───────────────────────────────────
+  // useChat보다 먼저 정의되어야 함 (onFinish 등에서 참조)
+  const addToChatHistory = useCallback((msg) => {
+    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setChatHistory((prev) => [
+      ...prev,
+      { id, role: msg.role, text: msg.text, done: !msg.typewrite },
+    ]);
+    if (msg.typewrite && msg.role === "assistant") {
+      setTypingId(id);
+      setDisplayedText("");
+    }
+  }, []);
+
+  // ── 4. useChat (API 통신) ──────────────────────────────────────
   const {
     messages: apiMessages,
     append,
@@ -146,7 +160,7 @@ export default function Home() {
 
   const isLoading = status === "streaming" || status === "submitted";
 
-  // ── 4. Memo/Callback ─────────────────────────────────────────
+  // ── 5. Memo/Callback ─────────────────────────────────────────
   const streamingText = useMemo(() => {
     if (!isLoading) return "";
     const last = apiMessages[apiMessages.length - 1];
@@ -160,22 +174,6 @@ export default function Home() {
       ""
     );
   }, [apiMessages, isLoading]);
-
-  // ─────────────────────────────────────────────
-  // chatHistory 헬퍼: 새 메시지 추가
-  // typewrite: true → 타이프라이터 효과 적용 (assistant만 해당)
-  // ─────────────────────────────────────────────
-  const addToChatHistory = useCallback((msg) => {
-    const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setChatHistory((prev) => [
-      ...prev,
-      { id, role: msg.role, text: msg.text, done: !msg.typewrite },
-    ]);
-    if (msg.typewrite && msg.role === "assistant") {
-      setTypingId(id);
-      setDisplayedText("");
-    }
-  }, []);
 
   // ─────────────────────────────────────────────
   // 초기화: 회사 식별, localStorage 복원, 방문 이벤트
