@@ -1,0 +1,11 @@
+{
+  "id": "MN3O5htO4UNo0sAs",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello",
+      "id": "8ulaJuB9UOEnJaoF"
+    }
+  ],
+  "trigger": "submit-message"
+}

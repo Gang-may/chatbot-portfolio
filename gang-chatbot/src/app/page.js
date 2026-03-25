@@ -155,7 +155,7 @@ export default function Home() {
     },
   });
 
-  const { messages: apiMessages, status } = chatConfig;
+  const { messages: apiMessages, status, sendMessage } = chatConfig;
   
   // 디버깅을 위해 로컬 콘솔에 메서드 덤프
   console.log("useChat returns keys:", Object.keys(chatConfig));
