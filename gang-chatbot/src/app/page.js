@@ -133,6 +133,7 @@ export default function Home() {
       }
     },
     onError: (err) => {
+      console.error("useChat onError:", err);
       const isRateLimit =
         err?.message?.includes("429") ||
         err?.message?.includes("RATE_LIMIT") ||
@@ -140,7 +141,7 @@ export default function Home() {
 
       const errMsg = isRateLimit
         ? `⏳ **API 요청 한도에 도달했어요!**\n\n무료 티어 사용 중으로 분당 요청 한도가 제한되어 있습니다.\n잠시 후 다시 질문해 주시거나, 아래 연락처로 직접 연락 주세요 😊\n\n📞 010-5540-8025 | 📧 kyoungmin712@naver.com`
-        : FALLBACK_MESSAGE;
+        : `앗, 지금 제 AI 뇌에 과부하가 왔나 봐요! 😅 (에러 원인: ${err?.message || "알 수 없음"})\n\n포트폴리오 사이트에서 제 연락처로 직접 연락 주시겠어요?`;
 
       addToChatHistory({ role: "assistant", text: errMsg, typewrite: true });
       setIsLocked(false);
@@ -480,10 +481,10 @@ export default function Home() {
         if (isLast) pendingLimitRef.current = true;
         try {
           append({ role: "user", content: text }); // 👈 수정: sendMessage({ text }) 대신 객체 형태로 append 호출
-        } catch {
+        } catch (err) {
           addToChatHistory({
             role: "assistant",
-            text: FALLBACK_MESSAGE,
+            text: `앗, 지금 제 AI 뇌에 과부하가 왔나 봐요! 😅 (Append Error: ${err?.message || "Unknown"})\n\n포트폴리오 사이트에서 제 연락처로 직접 연락 주시겠어요?`,
             typewrite: true,
           });
           setIsLocked(false);
