@@ -59,26 +59,38 @@ const historyKey = (c) => `chat_history_${c}`;
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
 export default function Home() {
-  // ── 핵심 설계: chatHistory = 화면 표시의 단일 소스 ──────────────
-  // useChat.messages는 Gemini API 컨텍스트 유지용으로만 사용 (렌더링 X)
-  // 모든 메시지(웰컴/유저/FAQ/API 완료/에러/한도)는 chatHistory에서 관리
-  const [chatHistory, setChatHistory] = useState([WELCOME_MSG]);
-
-  // ── 타이프라이터 상태 ─────────────────────────────────────────
-  const [typingId, setTypingId] = useState(null);
-  const [displayedText, setDisplayedText] = useState("");
+  // ── 1. Refs (최상단) ──────────────────────────────────────────
+  const latestStreamTextRef = useRef("");
+  const pendingLimitRef = useRef(false);
+  const chatEndRef = useRef(null);
+  const canvasRef = useRef(null);
   const typewriterRef = useRef(null);
 
-  // ── API 스트리밍 표시 (useChat.messages에서 추출, 임시 버블) ──
-  // 스트리밍 중에만 별도 버블로 표시 → 완료되면 chatHistory에 추가되고 이 버블은 사라짐
+  // ── 2. 상태 (State) ───────────────────────────────────────────
+  const [chatHistory, setChatHistory] = useState([WELCOME_MSG]);
+  const [typingId, setTypingId] = useState(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [theme, setTheme] = useState("dark");
+  const [isChatMode, setIsChatMode] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [company, setCompany] = useState("guest");
+  const [chatCount, setChatCount] = useState(0);
+  const [isLimitReached, setIsLimitReached] = useState(false);
+  const [showSticker, setShowSticker] = useState(false);
+  const [stickerCountdown, setStickerCountdown] = useState(STICKER_DURATION);
+  const [isStickerShown, setIsStickerShown] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+
+  // ── 3. useChat (API 통신) ──────────────────────────────────────
   const {
     messages: apiMessages,
-    append, // 👈 수정: sendMessage 대신 append 사용
+    append,
     status,
   } = useChat({
     api: "/api/chat",
     onFinish: (message) => {
-      // 1. 기존 방식대로 텍스트 추출 시도
       let text =
         message.parts
           ?.filter((p) => p.type === "text")
@@ -87,16 +99,13 @@ export default function Home() {
         message.content ||
         "";
 
-      // 2. 👇 추가 (핵심 해결책): 추출에 실패해 빈 문자열일 경우 백업해둔 텍스트 사용
       if (!text || text.trim() === "") {
         text = latestStreamTextRef.current;
       }
-      // 💡 수정: 타이프라이터 true로 변경
       addToChatHistory({ role: "assistant", text, typewrite: true });
       setIsLocked(false);
-      latestStreamTextRef.current = ""; // 👈 추가: 처리 후 백업 초기화
+      latestStreamTextRef.current = "";
 
-      // 마지막 메시지였으면 한도 안내 추가
       if (pendingLimitRef.current) {
         pendingLimitRef.current = false;
         setTimeout(() => {
@@ -110,7 +119,6 @@ export default function Home() {
       }
     },
     onError: (err) => {
-      // 429 한도 초과 vs 일반 오류 구분
       const isRateLimit =
         err?.message?.includes("429") ||
         err?.message?.includes("RATE_LIMIT") ||
@@ -136,28 +144,22 @@ export default function Home() {
     },
   });
 
-  // ── 기타 상태 ────────────────────────────────────────────────
-  const [inputValue, setInputValue] = useState("");
-  const [theme, setTheme] = useState("dark");
-  const [isChatMode, setIsChatMode] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [company, setCompany] = useState("guest");
-  const [chatCount, setChatCount] = useState(0);
-  const [isLimitReached, setIsLimitReached] = useState(false);
-  const [showSticker, setShowSticker] = useState(false);
-  const [stickerCountdown, setStickerCountdown] = useState(STICKER_DURATION);
-  const [isStickerShown, setIsStickerShown] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  // 관리자 모드: ?admin=hkm712 접속 시 카운트 제한 없이 무제한 사용
-  const [isAdminMode, setIsAdminMode] = useState(false);
-
-  const pendingLimitRef = useRef(false); // 마지막 API 요청 완료 후 한도 처리 플래그
-  const chatEndRef = useRef(null);
-  const canvasRef = useRef(null);
-  // 스트리밍 텍스트를 백업해둘 Ref
-  const latestStreamTextRef = useRef("");
-
   const isLoading = status === "streaming" || status === "submitted";
+
+  // ── 4. Memo/Callback ─────────────────────────────────────────
+  const streamingText = useMemo(() => {
+    if (!isLoading) return "";
+    const last = apiMessages[apiMessages.length - 1];
+    if (!last || last.role !== "assistant") return "";
+    return (
+      last.parts
+        ?.filter((p) => p.type === "text")
+        .map((p) => p.text)
+        .join("") ||
+      last.content ||
+      ""
+    );
+  }, [apiMessages, isLoading]);
 
   // ─────────────────────────────────────────────
   // chatHistory 헬퍼: 새 메시지 추가
@@ -411,23 +413,6 @@ export default function Home() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
   };
-
-  // ─────────────────────────────────────────────
-  // API 스트리밍 텍스트 추출 (임시 버블용)
-  // ─────────────────────────────────────────────
-  const streamingText = useMemo(() => {
-    if (!isLoading) return "";
-    const last = apiMessages[apiMessages.length - 1];
-    if (!last || last.role !== "assistant") return "";
-    return (
-      last.parts
-        ?.filter((p) => p.type === "text")
-        .map((p) => p.text)
-        .join("") ||
-      last.content ||
-      ""
-    );
-  }, [apiMessages, isLoading]);
 
   // ─────────────────────────────────────────────
   // 핵심: handleSend — 전송 인터셉터
