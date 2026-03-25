@@ -100,7 +100,7 @@ export default function Home() {
   // ── 4. useChat (API 통신) ──────────────────────────────────────
   const {
     messages: apiMessages,
-    append,
+    sendMessage,
     status,
   } = useChat({
     api: "/api/chat",
@@ -480,7 +480,7 @@ export default function Home() {
         // isLast이면 onFinish에서 한도 안내 처리
         if (isLast) pendingLimitRef.current = true;
         try {
-          append({ role: "user", content: text }); // 👈 수정: sendMessage({ text }) 대신 객체 형태로 append 호출
+          sendMessage({ role: "user", content: text }); // 👈 수정: append 대신 sendMessage 사용 (ai@6.x 표준)
         } catch (err) {
           addToChatHistory({
             role: "assistant",
