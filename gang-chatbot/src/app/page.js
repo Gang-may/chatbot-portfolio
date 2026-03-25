@@ -98,11 +98,7 @@ export default function Home() {
   }, []);
 
   // ── 4. useChat (API 통신) ──────────────────────────────────────
-  const {
-    messages: apiMessages,
-    sendMessage,
-    status,
-  } = useChat({
+  const chatConfig = useChat({
     api: "/api/chat",
     onFinish: (message) => {
       let text =
@@ -158,6 +154,11 @@ export default function Home() {
       }
     },
   });
+
+  const { messages: apiMessages, status } = chatConfig;
+  
+  // 디버깅을 위해 로컬 콘솔에 메서드 덤프
+  console.log("useChat returns keys:", Object.keys(chatConfig));
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -501,7 +502,7 @@ export default function Home() {
       isStickerShown,
       company,
       addToChatHistory,
-      append,
+      sendMessage,
     ],
   );
 
