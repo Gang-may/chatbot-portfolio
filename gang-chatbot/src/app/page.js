@@ -73,21 +73,29 @@ export default function Home() {
   // 스트리밍 중에만 별도 버블로 표시 → 완료되면 chatHistory에 추가되고 이 버블은 사라짐
   const {
     messages: apiMessages,
-    sendMessage,
+    append, // 👈 수정: sendMessage 대신 append 사용
     status,
   } = useChat({
     api: "/api/chat",
     onFinish: (message) => {
-      // API 응답 완료 → chatHistory에 영구 추가 (스트리밍 버블 교체)
-      const text =
+      // 1. 기존 방식대로 텍스트 추출 시도
+      let text =
         message.parts
           ?.filter((p) => p.type === "text")
           .map((p) => p.text)
           .join("") ||
         message.content ||
         "";
-      addToChatHistory({ role: "assistant", text, typewrite: false });
+
+      // 2. 👇 추가 (핵심 해결책): 추출에 실패해 빈 문자열일 경우 백업해둔 텍스트 사용
+      if (!text || text.trim() === "") {
+        text = latestStreamTextRef.current;
+      }
+      // 💡 수정: 타이프라이터 true로 변경
+      addToChatHistory({ role: "assistant", text, typewrite: true });
       setIsLocked(false);
+      latestStreamTextRef.current = ""; // 👈 추가: 처리 후 백업 초기화
+
       // 마지막 메시지였으면 한도 안내 추가
       if (pendingLimitRef.current) {
         pendingLimitRef.current = false;
@@ -146,6 +154,8 @@ export default function Home() {
   const pendingLimitRef = useRef(false); // 마지막 API 요청 완료 후 한도 처리 플래그
   const chatEndRef = useRef(null);
   const canvasRef = useRef(null);
+  // 스트리밍 텍스트를 백업해둘 Ref
+  const latestStreamTextRef = useRef("");
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -379,6 +389,15 @@ export default function Home() {
   }, [theme]);
 
   // ─────────────────────────────────────────────
+  // 스트리밍 중인 텍스트를 실시간으로 백업
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (streamingText) {
+      latestStreamTextRef.current = streamingText;
+    }
+  }, [streamingText]);
+
+  // ─────────────────────────────────────────────
   // 테마 전환
   // ─────────────────────────────────────────────
   const toggleTheme = () => {
@@ -477,7 +496,7 @@ export default function Home() {
         // isLast이면 onFinish에서 한도 안내 처리
         if (isLast) pendingLimitRef.current = true;
         try {
-          sendMessage({ text });
+          append({ role: "user", content: text }); // 👈 수정: sendMessage({ text }) 대신 객체 형태로 append 호출
         } catch {
           addToChatHistory({
             role: "assistant",
@@ -498,7 +517,7 @@ export default function Home() {
       isStickerShown,
       company,
       addToChatHistory,
-      sendMessage,
+      append,
     ],
   );
 
