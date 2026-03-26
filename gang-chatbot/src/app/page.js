@@ -54,7 +54,7 @@ const WELCOME_MSG = {
 const SUGGESTIONS = [
   { text: "프로필", icon: "far fa-smile", color: "#0d9488" },
   { text: "프로젝트", icon: "fas fa-briefcase", color: "#16a34a" },
-  { text: "스킬", icon: "fas fa-layer-group", color: "#8b5cf6" },
+  { text: "인적성 결과", icon: "fas fa-clipboard-check", color: "#8b5cf6" },
   { text: "학력·경력", icon: "fas fa-graduation-cap", color: "#d946ef" },
   { text: "연락처", icon: "far fa-address-card", color: "#d97706" },
 ];
@@ -95,7 +95,13 @@ export default function Home() {
     const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     setChatHistory((prev) => [
       ...prev,
-      { id, role: msg.role, text: msg.text, done: !msg.typewrite },
+      { 
+        id, 
+        role: msg.role, 
+        text: msg.text, 
+        done: !msg.typewrite, 
+        options: msg.options || null 
+      },
     ]);
     if (msg.typewrite && msg.role === "assistant") {
       setTypingId(id);
@@ -469,6 +475,7 @@ export default function Home() {
                 role: "assistant",
                 text: faqResult.answer,   // 폴백 텍스트 (SR 등)
                 chartData: faqResult.chartData, // 차트 데이터
+                options: faqResult.options || null,
                 done: true,
               },
             ]);
@@ -478,6 +485,7 @@ export default function Home() {
               role: "assistant",
               text: faqResult.answer,
               typewrite: true,
+              options: faqResult.options || null,
             });
           }
           setIsLocked(false);
@@ -698,6 +706,22 @@ export default function Home() {
                         </ReactMarkdown>
                         {isTyping && <span className="typewriter-cursor">▋</span>}
                       </>
+                    )}
+
+                    {/* 인터랙티브 다중 뎁스(Multi-depth) 옵션 카드 렌더링 (타이핑 종료 후 등장) */}
+                    {m.options && m.options.length > 0 && m.done && (
+                      <div className="chat-options-container">
+                        {m.options.map((opt, idx) => (
+                          <button 
+                            key={idx} 
+                            className="chat-option-card" 
+                            onClick={() => handleSend(opt.value)}
+                          >
+                            <span className="opt-title">{opt.title}</span>
+                            {opt.desc && <span className="opt-desc">{opt.desc}</span>}
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
