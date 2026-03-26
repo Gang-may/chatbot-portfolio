@@ -109,10 +109,17 @@ const FAQ_MAP = [
   {
     keywords: ["프로젝트", "포트폴리오", "작업물", "깃허브", "github"],
     type: "text",
-    answer: `제 프로젝트는 크게 2가지 도메인으로 나뉩니다. 어떤 분야가 궁금하신가요?`,
+    answer: `수행한 주요 프로젝트들입니다. 관심 있는 프로젝트를 선택하시면 상세 내용을 확인하실 수 있습니다!`,
     options: [
-      { title: "📊 데이터 분석", desc: "머신러닝, 자연어처리 등", value: "데이터 분석 프로젝트" },
-      { title: "📈 마케팅", desc: "시크릿 데이터, 브랜딩", value: "마케팅 프로젝트" }
+      { title: "휴머노이드 뉴스 분석", desc: "🤖 웹 크롤링 및 LDA 토픽 모델링 기반", value: "휴머노이드 뉴스 분석 안내" },
+      { title: "MSA 군수품 대시보드", desc: "🛠️ 7.4만 건 텍스트 마이닝 기반 분류", value: "MSA 군수품 대시보드 안내" },
+      { title: "서울시 노인 복지", desc: "🏙️ 생활인구 기반 복지 수요 예측 모델", value: "서울시 노인 복지 분석 안내" },
+      { title: "골든제주 시니어 여행", desc: "✈️ SARIMAX 및 K-Means 기반 서비스", value: "골든제주 시니어 여행 안내" },
+      { title: "TERRA 전술 시스템", desc: "🪖 YOLOv11s 기반 전술 지원 플랫폼", value: "TERRA 전술 시스템 안내" },
+      { title: "BAE JUICE 마케팅 분석", desc: "🧃 호주 숙취해소 틈새시장 진입 전략", value: "BAE JUICE 프로젝트 안내" },
+      { title: "Next-Gen Retail", desc: "🏪 트렌드 기반 무인점포 확대 전략", value: "Next-Gen Retail 프로젝트 안내" },
+      { title: "부영 리브랜딩", desc: "🏢 프리미엄 '럭셔리' 브랜드 전환 전략", value: "부영 리브랜딩 기획 안내" },
+      { title: "Notion 광고 캠페인", desc: "📝 IMC 활용 '올인원 워크스페이스' 캠페인", value: "Notion 광고 캠페인 안내" },
     ]
   },
   {

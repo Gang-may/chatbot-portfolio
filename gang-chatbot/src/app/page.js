@@ -28,7 +28,7 @@ const TYPEWRITER_SPEED = 15; // ms/글자
 const PORTFOLIO_URL = "https://gang-may.github.io/my-portfolio/";
 
 const FALLBACK_MESSAGE =
-  "앗, 지금 제 AI 뇌에 과부하가 왔나 봐요! 😅 포트폴리오 사이트에서 제 연락처로 직접 연락 주시겠어요?";
+  "현재 API 응답이 원활하지 않습니다. 새로고침 후 재시도 부탁드립니다. 만약 재시도 후 응답이 없을 시 포트폴리오 사이트에서 정보를 확인해 주세요.\n포트폴리오 사이트: https://gang-may.github.io/my-portfolio/";
 
 // 10회 소진 후 채팅 답변으로 출력되는 안내 메시지 (배너 대신)
 const LIMIT_MESSAGE = `🎯 **저와의 대화가 마무리되었습니다!**
@@ -149,7 +149,7 @@ export default function Home() {
 
       const errMsg = isRateLimit
         ? `⏳ **API 요청 한도에 도달했어요!**\n\n무료 티어 사용 중으로 분당 요청 한도가 제한되어 있습니다.\n잠시 후 다시 질문해 주시거나, 아래 연락처로 직접 연락 주세요 😊\n\n📞 010-5540-8025 | 📧 kyoungmin712@naver.com`
-        : `앗, 지금 제 AI 뇌에 과부하가 왔나 봐요! 😅 (에러 원인: ${err?.message || "알 수 없음"})\n\n포트폴리오 사이트에서 제 연락처로 직접 연락 주시겠어요?`;
+        : `현재 API 응답이 원활하지 않습니다. 새로고침 후 재시도 부탁드립니다. 만약 재시도 후 응답이 없을 시 포트폴리오 사이트에서 정보를 확인해 주세요.\n포트폴리오 사이트: ${PORTFOLIO_URL}`;
 
       addToChatHistory({ role: "assistant", text: errMsg, typewrite: true });
       setIsLocked(false);
@@ -514,7 +514,7 @@ export default function Home() {
         } catch (err) {
           addToChatHistory({
             role: "assistant",
-            text: `앗, 지금 제 AI 뇌에 과부하가 왔나 봐요! 😅 (Append Error: ${err?.message || "Unknown"})\n\n포트폴리오 사이트에서 제 연락처로 직접 연락 주시겠어요?`,
+            text: `현재 API 응답이 원활하지 않습니다. 새로고침 후 재시도 부탁드립니다. 만약 재시도 후 응답이 없을 시 포트폴리오 사이트에서 정보를 확인해 주세요.\n포트폴리오 사이트: ${PORTFOLIO_URL}`,
             typewrite: true,
           });
           setIsLocked(false);
