@@ -100,7 +100,8 @@ export default function Home() {
         role: msg.role, 
         text: msg.text, 
         done: !msg.typewrite, 
-        options: msg.options || null 
+        options: msg.options || null,
+        chartData: msg.chartData || null 
       },
     ]);
     if (msg.typewrite && msg.role === "assistant") {
@@ -480,6 +481,21 @@ export default function Home() {
               },
             ]);
           } else {
+            if (faqResult.chartData) {
+            // ── 차트 응답: 말풍선에 Chart 컴포넌트를 직접 렌더링 ──
+            const id = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            setChatHistory((prev) => [
+              ...prev,
+              {
+                id,
+                role: "assistant",
+                text: faqResult.answer,
+                chartData: faqResult.chartData,
+                options: faqResult.options || null,
+                done: true,
+              },
+            ]);
+          } else {
             // ── 텍스트 응답: 기존 타이프라이터 로직 ──
             addToChatHistory({
               role: "assistant",
@@ -487,6 +503,7 @@ export default function Home() {
               typewrite: true,
               options: faqResult.options || null,
             });
+          }
           }
           setIsLocked(false);
 
@@ -696,9 +713,14 @@ export default function Home() {
                   className={`message-row ${m.role === "user" ? "user" : "bot"}`}
                 >
                   <div className="bubble markdown-body">
-                    {/* type:"chart" → SkillChart 렌더링, 그 외 → 텍스트 */}
-                    {m.chartData && !isTyping ? (
-                      <SkillChart chartData={m.chartData} />
+                    {/* 차트 데이터가 있으면 SkillChart 렌더링, 없으면 텍스트 */}
+                    {m.chartData && m.done ? (
+                      <>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {text}
+                        </ReactMarkdown>
+                        <SkillChart chartData={m.chartData} />
+                      </>
                     ) : (
                       <>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
