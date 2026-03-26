@@ -1,4 +1,4 @@
-import { convertToModelMessages, streamText } from "ai";
+import { streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const google = createGoogleGenerativeAI({
@@ -107,12 +107,28 @@ const SYSTEM_PROMPT = `당신의 이름은 '황경민'입니다. 당신은 단�
 export async function POST(req) {
   try {
     const { messages } = await req.json();
-    const modelMessages = convertToModelMessages(messages);
+
+    // ── 메시지 형식 정규화 (Schema Error 방지) ──────────────────────
+    // assistant 메시지에 content 대신 parts만 들어있는 경우를 대비해
+    // 모든 메시지를 { role, content } 형식으로 정확하게 변환합니다.
+    const sanitizedMessages = messages.map((m) => {
+      let content = m.content;
+      if (!content && m.parts) {
+        content = m.parts
+          .filter((p) => p.type === "text")
+          .map((p) => p.text)
+          .join("");
+      }
+      return {
+        role: m.role,
+        content: content || "",
+      };
+    });
 
     const result = streamText({
       model: google("gemini-1.5-flash"),
       system: SYSTEM_PROMPT,
-      messages: modelMessages,
+      messages: sanitizedMessages,
       temperature: 0.7,
     });
 
